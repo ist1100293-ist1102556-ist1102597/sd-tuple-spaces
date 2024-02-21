@@ -2,6 +2,7 @@ package pt.ulisboa.tecnico.tuplespaces.client;
 
 import pt.ulisboa.tecnico.tuplespaces.client.grpc.ClientService;
 
+import java.util.List;
 import java.util.Scanner;
 
 public class CommandProcessor {
@@ -79,9 +80,7 @@ public class CommandProcessor {
         // get the tuple
         String tuple = split[1];
 
-        // put the tuple
-        System.out.println("TODO: implement put command");
-
+        clientService.put(tuple);
     }
 
     private void read(String[] split){
@@ -95,7 +94,7 @@ public class CommandProcessor {
         String tuple = split[1];
 
         // read the tuple
-        System.out.println("TODO: implement read command");
+        System.out.println(clientService.read(tuple));
     }
 
 
@@ -110,7 +109,7 @@ public class CommandProcessor {
         String tuple = split[1];
 
         // take the tuple
-        System.out.println("TODO: implement take command");
+        System.out.println(clientService.take(tuple));
     }
 
     private void getTupleSpacesState(String[] split){
@@ -119,11 +118,13 @@ public class CommandProcessor {
             this.printUsage();
             return;
         }
-        String qualifier = split[1];
+        // String qualifier = split[1];
 
         // get the tuple spaces state
-        System.out.println("TODO: implement getTupleSpacesState command");
-
+        List<String> tupleList = clientService.getTupleSpacesState();
+        for (String tuple : tupleList) {
+            System.out.println(tuple);
+        }
     }
 
     private void sleep(String[] split) {

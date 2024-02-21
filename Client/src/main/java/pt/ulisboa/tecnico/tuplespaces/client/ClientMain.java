@@ -22,10 +22,9 @@ public class ClientMain {
 
         // get the host and the port
         final String host = args[0];
-        final String port = args[1];
+        final Integer port = Integer.parseInt(args[1]);
 
-        CommandProcessor parser = new CommandProcessor(new ClientService());
+        CommandProcessor parser = new CommandProcessor(new ClientService(host, port));
         parser.parseInput();
-
     }
 }
