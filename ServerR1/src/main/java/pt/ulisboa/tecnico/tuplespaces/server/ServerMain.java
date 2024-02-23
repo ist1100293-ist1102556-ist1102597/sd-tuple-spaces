@@ -3,8 +3,14 @@ package pt.ulisboa.tecnico.tuplespaces.server;
 import java.io.IOException;
 
 import io.grpc.BindableService;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import pt.ulisboa.tecnico.nameServer.contract.NameServerGrpc;
+import pt.ulisboa.tecnico.nameServer.contract.NameServerGrpc.NameServerBlockingStub;
+import pt.ulisboa.tecnico.nameServer.contract.NameServerOuterClass.DeleteRequest;
+import pt.ulisboa.tecnico.nameServer.contract.NameServerOuterClass.RegisterRequest;
 
 public class ServerMain {
 
@@ -23,6 +29,12 @@ public class ServerMain {
     Server server = ServerBuilder.forPort(port).addService(service).build();
 
     try {
+      registerServer("localhost", 5001, args[3], args[0], port, args[2]);
+    } catch (Exception e) {
+      System.err.println("Could not register server: " + e);
+    }
+
+    try {
       server.start();
     } catch (IOException e) {
       System.err.println("Server could not start: " + e);
@@ -34,7 +46,34 @@ public class ServerMain {
       server.awaitTermination();
     } catch (InterruptedException e) {
       System.err.println("Server interrupted: " + e);
-    }
 
+      try {
+        unregisterServer("localhost", 5001, args[3], args[0], port);
+      } catch (Exception e2) {
+        System.err.println("Could not unregister server: " + e2);
+      }
+    }
+  }
+
+  public static void registerServer(String nameServerHostname, Integer nameServerPort, String serviceName, String host, Integer port, String qualifier) {
+    ManagedChannel channel = ManagedChannelBuilder.forAddress(nameServerHostname, nameServerPort).usePlaintext().build();
+    NameServerBlockingStub stub = NameServerGrpc.newBlockingStub(channel);
+
+    String hostname = host + ":" + port.toString();
+
+    stub.register(RegisterRequest.newBuilder().setName(serviceName).setHost(hostname).setQualifier(qualifier).build());
+
+    channel.shutdownNow();
+  }
+
+  public static void unregisterServer(String nameServerHostname, Integer nameServerPort, String serviceName, String host, Integer port) {
+    ManagedChannel channel = ManagedChannelBuilder.forAddress(nameServerHostname, nameServerPort).usePlaintext().build();
+    NameServerBlockingStub stub = NameServerGrpc.newBlockingStub(channel);
+
+    String hostname = host + ":" + port.toString();
+
+    stub.delete(DeleteRequest.newBuilder().setName(serviceName).setHost(hostname).build());
+
+    channel.shutdownNow();
   }
 }
