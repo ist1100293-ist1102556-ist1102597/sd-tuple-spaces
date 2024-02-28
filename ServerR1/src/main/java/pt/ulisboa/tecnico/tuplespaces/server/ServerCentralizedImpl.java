@@ -39,7 +39,7 @@ public class ServerCentralizedImpl extends TupleSpacesGrpc.TupleSpacesImplBase {
     }
 
     @Override
-    public void take(TakeRequest request, StreamObserver<TakeResponse> responseObserver) {
+    public synchronized void take(TakeRequest request, StreamObserver<TakeResponse> responseObserver) {
         String tuple = serverState.take(request.getSearchPattern());
         while(tuple == null){
             try {
@@ -55,7 +55,7 @@ public class ServerCentralizedImpl extends TupleSpacesGrpc.TupleSpacesImplBase {
     }
 
     @Override
-    public void getTupleSpacesState(getTupleSpacesStateRequest request, StreamObserver<getTupleSpacesStateResponse> responseObserver) {
+    public synchronized void getTupleSpacesState(getTupleSpacesStateRequest request, StreamObserver<getTupleSpacesStateResponse> responseObserver) {
         List<String> tuples = serverState.getTupleSpacesState();
         getTupleSpacesStateResponse response = getTupleSpacesStateResponse.newBuilder().addAllTuple(tuples).build();
         responseObserver.onNext(response);

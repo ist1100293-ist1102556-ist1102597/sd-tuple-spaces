@@ -28,10 +28,26 @@ public class ServerMain {
 
     Server server = ServerBuilder.forPort(port).addService(service).build();
 
+    boolean registered = false;
+
+
+    // Try to register the server on the name service
     try {
       registerServer("localhost", 5001, args[3], args[0], port, args[2]);
+      registered = true;
     } catch (Exception e) {
       System.err.println("Could not register server: " + e);
+    }
+
+    // If registered, schedule the unregister when the JVM is shutting down
+    if (registered) {
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        try {
+          unregisterServer("localhost", 5001, args[3], args[0], port);
+        } catch (Exception e) {
+          System.err.println("Could not unregister server: " + e);
+        }
+      }));
     }
 
     try {
@@ -46,17 +62,13 @@ public class ServerMain {
       server.awaitTermination();
     } catch (InterruptedException e) {
       System.err.println("Server interrupted: " + e);
-
-      try {
-        unregisterServer("localhost", 5001, args[3], args[0], port);
-      } catch (Exception e2) {
-        System.err.println("Could not unregister server: " + e2);
-      }
     }
   }
 
-  public static void registerServer(String nameServerHostname, Integer nameServerPort, String serviceName, String host, Integer port, String qualifier) {
-    ManagedChannel channel = ManagedChannelBuilder.forAddress(nameServerHostname, nameServerPort).usePlaintext().build();
+  public static void registerServer(String nameServerHostname, Integer nameServerPort, String serviceName, String host,
+      Integer port, String qualifier) {
+    ManagedChannel channel = ManagedChannelBuilder.forAddress(nameServerHostname, nameServerPort).usePlaintext()
+        .build();
     NameServerBlockingStub stub = NameServerGrpc.newBlockingStub(channel);
 
     String hostname = host + ":" + port.toString();
@@ -66,8 +78,10 @@ public class ServerMain {
     channel.shutdownNow();
   }
 
-  public static void unregisterServer(String nameServerHostname, Integer nameServerPort, String serviceName, String host, Integer port) {
-    ManagedChannel channel = ManagedChannelBuilder.forAddress(nameServerHostname, nameServerPort).usePlaintext().build();
+  public static void unregisterServer(String nameServerHostname, Integer nameServerPort, String serviceName,
+      String host, Integer port) {
+    ManagedChannel channel = ManagedChannelBuilder.forAddress(nameServerHostname, nameServerPort).usePlaintext()
+        .build();
     NameServerBlockingStub stub = NameServerGrpc.newBlockingStub(channel);
 
     String hostname = host + ":" + port.toString();
