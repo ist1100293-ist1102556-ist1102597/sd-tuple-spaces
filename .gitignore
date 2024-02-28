@@ -12,6 +12,9 @@
 .idea/**/dictionaries
 .idea/**/shelf
 
+# MacOS
+**/.DS_Store
+
 # AWS User-specific
 .idea/**/aws.xml
 
@@ -30,6 +33,12 @@
 # Gradle
 .idea/**/gradle.xml
 .idea/**/libraries
+
+# VSCode
+**/.vscode
+
+# Test Results
+**/test-outputs/
 
 # Gradle and Maven with auto-import
 # When using Gradle or Maven with auto-import, you should exclude module files,

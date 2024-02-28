@@ -30,7 +30,6 @@ public class ServerMain {
 
     boolean registered = false;
 
-
     // Try to register the server on the name service
     try {
       registerServer("localhost", 5001, args[3], args[0], port, args[2]);
