@@ -11,6 +11,14 @@ class ServiceEntry:
         self.servers = []
 
     def register_server(self, server: ServerEntry):
+        servers = list(filter(lambda s: s.qualifier == server.qualifier, self.servers))
+
+        if len(servers) > 0:
+            for s in servers:
+                s.host = server.host
+
+            return
+
         self.servers.append(server)
 
     def delete_server(self, host: str):
