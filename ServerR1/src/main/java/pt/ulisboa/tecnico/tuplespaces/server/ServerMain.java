@@ -53,6 +53,7 @@ public class ServerMain {
       server.start();
     } catch (IOException e) {
       System.err.println("Server could not start: " + e);
+      return;
     }
 
     System.out.printf("%s Server %s started on %s:%s%n", args[3], args[2], args[0], args[1]);
