@@ -28,18 +28,16 @@ public class ServerMain {
 
     Server server = ServerBuilder.forPort(port).addService(service).build();
 
-    boolean registered = false;
+    try {
+      server.start();
+    } catch (IOException e) {
+      System.err.println("Server could not start: " + e);
+      System.exit(1);
+    }
 
     // Try to register the server on the name service
     try {
       registerServer("localhost", 5001, args[3], args[0], port, args[2]);
-      registered = true;
-    } catch (Exception e) {
-      System.err.println("Could not register server: " + e);
-    }
-
-    // If registered, schedule the unregister when the JVM is shutting down
-    if (registered) {
       Runtime.getRuntime().addShutdownHook(new Thread(() -> {
         try {
           unregisterServer("localhost", 5001, args[3], args[0], port);
@@ -47,13 +45,8 @@ public class ServerMain {
           System.err.println("Could not unregister server: " + e);
         }
       }));
-    }
-
-    try {
-      server.start();
-    } catch (IOException e) {
-      System.err.println("Server could not start: " + e);
-      return;
+    } catch (Exception e) {
+      System.err.println("Could not register server: " + e);
     }
 
     System.out.printf("%s Server %s started on %s:%s%n", args[3], args[2], args[0], args[1]);
