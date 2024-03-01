@@ -8,8 +8,9 @@ import grpc
 from naming_server_service_impl import NamingServerServiceImpl
 import logging
 
-# define the port
+# constants
 PORT = 5001
+THREAD_POOL_SIZE = 1
 
 def main():
     # print received arguments
@@ -29,7 +30,7 @@ def main():
     port = PORT
 
     # create a gRPC server
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=THREAD_POOL_SIZE))
 
     # add service implementation
     pb2_grpc.add_NameServerServicer_to_server(NamingServerServiceImpl(), server)
