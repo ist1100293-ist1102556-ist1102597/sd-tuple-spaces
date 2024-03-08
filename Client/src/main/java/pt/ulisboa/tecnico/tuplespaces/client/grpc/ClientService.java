@@ -6,19 +6,21 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesGrpc;
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesCentralized.*;
+import pt.ulisboa.tecnico.tuplespaces.client.util.OrderedDelayer;
 
 public class ClientService {
 
-  /*TODO: The gRPC client-side logic should be here.
-        This should include a method that builds a channel and stub,
-        as well as individual methods for each remote operation of this service. */
+    /* TODO: This class should implement the front-end of the replicated TupleSpaces service 
+        (according to the Xu-Liskov algorithm)*/
 
   private final TupleSpacesGrpc.TupleSpacesBlockingStub stub;
   private final ManagedChannel channel;
+  private final OrderedDelayer delayer;
 
-  public ClientService(String host, Integer port) {
+  public ClientService(String host, Integer port, Integer numServers) {
     this.channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
     this.stub = TupleSpacesGrpc.newBlockingStub(this.channel);
+    this.delayer = new OrderedDelayer(numServers);
   }
 
   public void shutdownChannel() {
@@ -47,4 +49,28 @@ public class ClientService {
     getTupleSpacesStateResponse response = this.stub.getTupleSpacesState(request);
     return response.getTupleList();
   }
+
+  /* This method allows the command processor to set the request delay assigned to a given server */
+  public void setDelay(int id, int delay) {
+    delayer.setDelay(id, delay);
+
+    /* TODO: Remove this debug snippet */
+    System.out.println("[Debug only]: After setting the delay, I'll test it");
+    for (Integer i : delayer) {
+      System.out.println("[Debug only]: Now I can send request to stub[" + i + "]");
+  }
+  System.out.println("[Debug only]: Done.");
+}
+
+  /* TODO: individual methods for each remote operation of the TupleSpaces service */
+
+  /* Example: How to use the delayer before sending requests to each server 
+  *          Before entering each iteration of this loop, the delayer has already 
+  *          slept for the delay associated with server indexed by 'id'.
+  *          id is in the range 0..(numServers-1).
+
+      for (Integer id : delayer) {
+          //stub[id].some_remote_method(some_arguments);
+      }
+  */
 }
