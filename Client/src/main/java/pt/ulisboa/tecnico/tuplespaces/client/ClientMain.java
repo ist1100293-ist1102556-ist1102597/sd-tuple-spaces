@@ -11,7 +11,6 @@ import pt.ulisboa.tecnico.nameServer.contract.NameServerOuterClass.LookupRespons
 import pt.ulisboa.tecnico.tuplespaces.client.grpc.ClientService;
 
 public class ClientMain {
-    static final int numServers = 3;
     public static void main(String[] args) {
         
         // check arguments
@@ -36,7 +35,7 @@ public class ClientMain {
         final Integer port = Integer.parseInt(hostParts[1]);
 
 
-        CommandProcessor parser = new CommandProcessor(new ClientService(host, port, ClientMain.numServers));
+        CommandProcessor parser = new CommandProcessor(new ClientService(host, port));
         parser.parseInput();
     }
 
