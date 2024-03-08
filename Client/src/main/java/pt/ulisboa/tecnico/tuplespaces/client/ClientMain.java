@@ -1,5 +1,6 @@
 package pt.ulisboa.tecnico.tuplespaces.client;
 
+import java.util.HashMap;
 import java.util.Random;
 
 import io.grpc.ManagedChannel;
@@ -25,25 +26,23 @@ public class ClientMain {
         final Integer nameServerPort = Integer.parseInt(args[1]);
         final String serviceName = args[2];
 
-        String[] hostParts = getServerInformation(nameServerHost, nameServerPort, serviceName).split(":");
-        if (hostParts.length != 2) {
-            System.err.println("Invalid host:port");
-            return;
+        HashMap<String, String> servers = new HashMap<>();
+        String[] qualifiers = {"A", "B", "C"};
+
+        for (String qualifier : qualifiers) {
+            String server = getServerInformation(nameServerHost, nameServerPort, serviceName, qualifier);
+            servers.put(qualifier, server);
         }
 
-        final String host = hostParts[0];
-        final Integer port = Integer.parseInt(hostParts[1]);
-
-
-        CommandProcessor parser = new CommandProcessor(new ClientService(host, port));
+        CommandProcessor parser = new CommandProcessor(new ClientService(servers));
         parser.parseInput();
     }
 
-    public static String getServerInformation(String nameServerHostname, Integer nameServerPort, String serviceName) {
+    public static String getServerInformation(String nameServerHostname, Integer nameServerPort, String serviceName, String qualifier) {
         ManagedChannel channel = ManagedChannelBuilder.forAddress(nameServerHostname, nameServerPort).usePlaintext().build();
         NameServerBlockingStub stub = NameServerGrpc.newBlockingStub(channel);
 
-        LookupResponse response = stub.lookup(LookupRequest.newBuilder().setName(serviceName).build());
+        LookupResponse response = stub.lookup(LookupRequest.newBuilder().setName(serviceName).setQualifier(qualifier).build());
 
         channel.shutdownNow();
         int choice = (new Random()).nextInt(response.getHostsCount());

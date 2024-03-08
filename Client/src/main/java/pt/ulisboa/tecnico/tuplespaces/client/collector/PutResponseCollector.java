@@ -19,7 +19,7 @@ public class PutResponseCollector implements ResponseCollector<PutResponse>{
         notifyAll();
     }
     
-    public synchronized void waitForResponses(int numServers) {
+    public synchronized void waitForResponses() {
         while (numResponses < numServers) {
             try {
                 wait();

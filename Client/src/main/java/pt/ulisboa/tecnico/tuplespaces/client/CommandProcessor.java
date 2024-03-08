@@ -126,10 +126,10 @@ public class CommandProcessor {
             this.printUsage();
             return;
         }
-        // String qualifier = split[1];
+        String qualifier = split[1];
 
         // get the tuple spaces state
-        List<String> tupleList = clientService.getTupleSpacesState();
+        List<String> tupleList = clientService.getTupleSpacesState(qualifier);
         System.out.println("OK");
         System.out.println(tupleList);
         System.out.println("");
