@@ -180,8 +180,14 @@ public class CommandProcessor {
         return;
       }
 
-      // register delay <time> for when calling server <qualifier>
-      System.out.println("TODO: implement setdelay command (only needed in phases 2+3)");
+      int index = indexOfServerQualifier(qualifier);
+
+      if (index == -1){
+        this.printUsage();
+        return;
+      }
+
+      clientService.setDelay(index, time);
     }
 
     private void printUsage() {
