@@ -56,10 +56,10 @@ public class ClientService {
     PutRequest request = PutRequest.newBuilder().setNewTuple(tuple).build();
     PutResponseCollector collector = new PutResponseCollector(this.stubs.size());
 
-    stubs.stream().forEach(stub -> {
-      TupleSpacesObserver<PutResponse> observer = new TupleSpacesObserver<>(collector, stubs.indexOf(stub));
-      stub.put(request, observer);
-    });
+    for (Integer index : delayer) {
+      TupleSpacesObserver<PutResponse> observer = new TupleSpacesObserver<>(collector, index);
+      stubs.get(index).put(request, observer);
+    }
 
     collector.waitForResponses();
   }
@@ -68,10 +68,10 @@ public class ClientService {
     ReadRequest request = ReadRequest.newBuilder().setSearchPattern(pattern).build();
     ReadResponseCollector collector = new ReadResponseCollector(this.stubs.size());
 
-    this.stubs.stream().forEach(stub -> {
-      TupleSpacesObserver<ReadResponse> observer = new TupleSpacesObserver<>(collector, stubs.indexOf(stub));
-      stub.read(request, observer);
-    });
+    for (Integer index : delayer) {
+      TupleSpacesObserver<ReadResponse> observer = new TupleSpacesObserver<>(collector, index);
+      stubs.get(index).read(request, observer);
+    }
 
     return collector.getResponse().getResult();
   }
