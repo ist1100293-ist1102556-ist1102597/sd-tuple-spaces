@@ -6,9 +6,9 @@ import pt.ulisboa.tecnico.tuplespaces.client.collector.ResponseCollector;
 public class TupleSpacesObserver<R> implements StreamObserver<R> {
 
     private ResponseCollector<R> responseCollector;
-    private String server;
+    private int server;
 
-    public TupleSpacesObserver(ResponseCollector<R> responseCollector, String server) {
+    public TupleSpacesObserver(ResponseCollector<R> responseCollector, Integer server) {
         this.responseCollector = responseCollector;
         this.server = server;
     }

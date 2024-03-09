@@ -1,6 +1,7 @@
 package pt.ulisboa.tecnico.tuplespaces.client;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import io.grpc.ManagedChannel;
@@ -26,12 +27,12 @@ public class ClientMain {
         final Integer nameServerPort = Integer.parseInt(args[1]);
         final String serviceName = args[2];
 
-        HashMap<String, String> servers = new HashMap<>();
         String[] qualifiers = {"A", "B", "C"};
+        List<String> servers = new ArrayList<>();
 
         for (String qualifier : qualifiers) {
             String server = getServerInformation(nameServerHost, nameServerPort, serviceName, qualifier);
-            servers.put(qualifier, server);
+            servers.add(server);
         }
 
         CommandProcessor parser = new CommandProcessor(new ClientService(servers));

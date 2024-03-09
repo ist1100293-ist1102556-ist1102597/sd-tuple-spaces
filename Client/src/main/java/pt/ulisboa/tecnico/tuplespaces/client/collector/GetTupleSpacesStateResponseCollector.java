@@ -1,6 +1,5 @@
 package pt.ulisboa.tecnico.tuplespaces.client.collector;
 
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.getTupleSpacesStateRequest;
 import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.getTupleSpacesStateResponse;
 
 public class GetTupleSpacesStateResponseCollector implements ResponseCollector<getTupleSpacesStateResponse> {
@@ -9,7 +8,7 @@ public class GetTupleSpacesStateResponseCollector implements ResponseCollector<g
     Throwable error;
 
     @Override
-	public synchronized void addResponse(getTupleSpacesStateResponse r, String server) {
+	public synchronized void addResponse(getTupleSpacesStateResponse r, Integer server) {
 		response = r;
         notifyAll();
 	}

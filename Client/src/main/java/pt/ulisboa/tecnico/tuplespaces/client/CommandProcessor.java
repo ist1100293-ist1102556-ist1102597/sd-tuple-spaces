@@ -128,8 +128,15 @@ public class CommandProcessor {
         }
         String qualifier = split[1];
 
+        int index = indexOfServerQualifier(qualifier);
+
+        if (index == -1){
+            this.printUsage();
+            return;
+        }
+
         // get the tuple spaces state
-        List<String> tupleList = clientService.getTupleSpacesState(qualifier);
+        List<String> tupleList = clientService.getTupleSpacesState(index);
         System.out.println("OK");
         System.out.println(tupleList);
         System.out.println("");
@@ -186,6 +193,19 @@ public class CommandProcessor {
                 "- sleep <integer>\n" +
                 "- setdelay <server> <integer>\n" +
                 "- exit\n");
+    }
+
+    private int indexOfServerQualifier(String qualifier) {
+        switch (qualifier) {
+            case "A":
+                return 0;
+            case "B":
+                return 1;
+            case "C":
+                return 2;
+            default:
+                return -1;
+        }
     }
 
     private boolean inputIsValid(String[] input){

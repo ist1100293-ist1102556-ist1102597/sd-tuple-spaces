@@ -14,7 +14,7 @@ public class ReadResponseCollector implements ResponseCollector<ReadResponse> {
     }
 
     @Override
-    public synchronized void addResponse(ReadResponse r, String server) {
+    public synchronized void addResponse(ReadResponse r, Integer server) {
         numResponses++;
         if (!hasResponse) {
             this.response = r;

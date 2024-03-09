@@ -1,9 +1,7 @@
 package pt.ulisboa.tecnico.tuplespaces.client.grpc;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -22,19 +20,17 @@ import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplic
 
 public class ClientService {
 
-  private final Map<String, TupleSpacesReplicaStub> stubs = new HashMap<>();
+  private final List<TupleSpacesReplicaStub> stubs = new ArrayList<>();
   private final List<ManagedChannel> channels = new ArrayList<>();
 
-  public ClientService(Map<String, String> servers) {
+  public ClientService(List<String> servers) {
     
-    for (Map.Entry<String, String> entry : servers.entrySet()) {
-      String qualifier = entry.getKey();
-      String server = entry.getValue();
+    for (String server : servers) {
       String[] parts = server.split(":");
 
       ManagedChannel channel = ManagedChannelBuilder.forAddress(parts[0], Integer.parseInt(parts[1])).usePlaintext().build();
       this.channels.add(channel);
-      this.stubs.put(qualifier, TupleSpacesReplicaGrpc.newStub(channel));
+      this.stubs.add(TupleSpacesReplicaGrpc.newStub(channel));
     }
 
   }
@@ -47,11 +43,8 @@ public class ClientService {
     PutRequest request = PutRequest.newBuilder().setNewTuple(tuple).build();
     PutResponseCollector collector = new PutResponseCollector(this.stubs.size());
 
-    this.stubs.entrySet().stream().forEach(entry -> {
-      String qualifier = entry.getKey();
-      TupleSpacesReplicaStub stub = entry.getValue();
-
-      TupleSpacesObserver<PutResponse> observer = new TupleSpacesObserver<>(collector, qualifier);
+    stubs.stream().forEach(stub -> {
+      TupleSpacesObserver<PutResponse> observer = new TupleSpacesObserver<>(collector, stubs.indexOf(stub));
       stub.put(request, observer);
     });
     
@@ -62,11 +55,8 @@ public class ClientService {
     ReadRequest request = ReadRequest.newBuilder().setSearchPattern(pattern).build();
     ReadResponseCollector collector = new ReadResponseCollector(this.stubs.size());
 
-    this.stubs.entrySet().stream().forEach(entry -> {
-      String qualifier = entry.getKey();
-      TupleSpacesReplicaStub stub = entry.getValue();
-
-      TupleSpacesObserver<ReadResponse> observer = new TupleSpacesObserver<>(collector, qualifier);
+    this.stubs.stream().forEach(stub -> {
+      TupleSpacesObserver<ReadResponse> observer = new TupleSpacesObserver<>(collector, stubs.indexOf(stub));
       stub.read(request, observer);
     });
 
@@ -82,18 +72,18 @@ public class ClientService {
     return "TODO";
   }
 
-  public List<String> getTupleSpacesState(String qualifier){
+  public List<String> getTupleSpacesState(Integer index){
     
-    TupleSpacesReplicaStub stub = stubs.get(qualifier);
+    TupleSpacesReplicaStub stub = stubs.get(index);
 
     if (stub == null) {
-      throw new IllegalArgumentException("Unknown qualifier: " + qualifier);
+      throw new IllegalArgumentException("Unknown server: " + index);
     }
 
     getTupleSpacesStateRequest request = getTupleSpacesStateRequest.newBuilder().build();
     GetTupleSpacesStateResponseCollector collector = new GetTupleSpacesStateResponseCollector();
     
-    TupleSpacesObserver<getTupleSpacesStateResponse> observer = new TupleSpacesObserver<>(collector, qualifier);
+    TupleSpacesObserver<getTupleSpacesStateResponse> observer = new TupleSpacesObserver<>(collector, index);
     stub.getTupleSpacesState(request, observer);
     
     return collector.getResponse().getTupleList();

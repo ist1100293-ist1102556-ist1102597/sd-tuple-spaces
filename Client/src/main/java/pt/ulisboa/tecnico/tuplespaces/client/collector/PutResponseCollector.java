@@ -13,7 +13,7 @@ public class PutResponseCollector implements ResponseCollector<PutResponse>{
     }
 
     @Override
-    public synchronized void addResponse(PutResponse r, String server) {
+    public synchronized void addResponse(PutResponse r, Integer server) {
         numValidResponses++;
         numResponses++;
         notifyAll();
