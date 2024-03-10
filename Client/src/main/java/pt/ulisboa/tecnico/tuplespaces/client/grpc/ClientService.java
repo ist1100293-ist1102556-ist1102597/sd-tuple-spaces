@@ -35,10 +35,12 @@ public class ClientService {
   OrderedDelayer delayer;
   private final List<TupleSpacesReplicaStub> stubs = new ArrayList<>();
   private final List<ManagedChannel> channels = new ArrayList<>();
+  private int clientId;
 
-  public ClientService(List<String> servers) {
 
+  public ClientService(List<String> servers, Integer clientId) {
     delayer = new OrderedDelayer(servers.size());
+    this.clientId = clientId;
 
     for (String server : servers) {
       String[] parts = server.split(":");
@@ -87,7 +89,7 @@ public class ClientService {
     return collector.getResponse().getResult();
   }
 
-  public Map<Integer, List<String>> takePhase1(String pattern, int clientId) {
+  public Map<Integer, List<String>> takePhase1(String pattern) {
     HashMap<Integer, List<String>> result = new HashMap<>();
     
     TakePhase1Request request = TakePhase1Request.newBuilder().setSearchPattern(pattern).setClientId(clientId).build();
@@ -110,7 +112,7 @@ public class ClientService {
     return result;
   }
 
-  public void takePhase1Release(int clientId) {
+  public void takePhase1Release() {
     TakePhase1ReleaseRequest request = TakePhase1ReleaseRequest.newBuilder().setClientId(clientId).build();
     TakePhase1ReleaseResponseCollector collector = new TakePhase1ReleaseResponseCollector(stubs.size());
 
@@ -122,7 +124,7 @@ public class ClientService {
     collector.waitForResponses();
   }
 
-  public void takePhase2(String tuple, int clientId) {
+  public void takePhase2(String tuple) {
     TakePhase2Request request = TakePhase2Request.newBuilder().setTuple(tuple).setClientId(clientId).build();
     TakePhase2ResponseCollector collector = new TakePhase2ResponseCollector(stubs.size());
 

@@ -16,7 +16,7 @@ public class ClientMain {
     public static void main(String[] args) {
         
         // check arguments
-        if (args.length != 3) {
+        if (args.length != 4) {
             System.err.println("Argument(s) missing!");
             System.err.println("Usage: mvn exec:java -Dexec.args=<host> <port>");
             return;
@@ -26,6 +26,7 @@ public class ClientMain {
         final String nameServerHost = args[0];
         final Integer nameServerPort = Integer.parseInt(args[1]);
         final String serviceName = args[2];
+        final Integer clientId = Integer.parseInt(args[3]);
 
         String[] qualifiers = {"A", "B", "C"};
         List<String> servers = new ArrayList<>();
@@ -35,7 +36,7 @@ public class ClientMain {
             servers.add(server);
         }
 
-        CommandProcessor parser = new CommandProcessor(new ClientService(servers));
+        CommandProcessor parser = new CommandProcessor(new ClientService(servers, clientId));
         parser.parseInput();
     }
 

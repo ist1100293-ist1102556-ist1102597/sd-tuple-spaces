@@ -120,7 +120,7 @@ public class CommandProcessor {
 
         String finalTuple;
         while (true) {
-            Map<Integer, List<String>> takePhase1Result = clientService.takePhase1(pattern, 0);
+            Map<Integer, List<String>> takePhase1Result = clientService.takePhase1(pattern);
 
             // Get the union of all the responses
             Set<String> allTuples = new HashSet<>();
@@ -153,7 +153,7 @@ public class CommandProcessor {
             }
 
             // Release the tuples
-            clientService.takePhase1Release(0);
+            clientService.takePhase1Release();
 
             // Wait random amount of time
             try {
@@ -163,7 +163,7 @@ public class CommandProcessor {
             }
         }
 
-        clientService.takePhase2(finalTuple, 0);
+        clientService.takePhase2(finalTuple);
 
         System.out.println("OK");
         System.out.println(finalTuple);
