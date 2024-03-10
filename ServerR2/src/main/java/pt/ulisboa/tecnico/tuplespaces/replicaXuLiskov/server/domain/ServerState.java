@@ -72,7 +72,7 @@ public class ServerState {
   public Optional<List<String>> takePhase1(String pattern, int clientId) {
     List<String> matchingTuples = new ArrayList<>();
 
-    if (!tuples.stream().filter(tuple -> tuple.getTuple().matches(pattern)).findAny().isPresent()) {
+    if (tuples.stream().filter(tuple -> tuple.getTuple().matches(pattern)).count() == 0) {
       return Optional.empty();
     }
 
@@ -99,6 +99,7 @@ public class ServerState {
         .orElseThrow(() -> new RuntimeException("No matching tuple found"));
 
     tuples.remove(matchingTuple);
+    takePhase1Release(clientId);
   }
 
   public List<String> getTupleSpacesState() {
