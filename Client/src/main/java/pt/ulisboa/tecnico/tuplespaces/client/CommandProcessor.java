@@ -2,8 +2,14 @@ package pt.ulisboa.tecnico.tuplespaces.client;
 
 import pt.ulisboa.tecnico.tuplespaces.client.grpc.ClientService;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.Scanner;
+import java.util.Set;
 
 public class CommandProcessor {
 
@@ -33,7 +39,7 @@ public class CommandProcessor {
             System.out.print("> ");
             String line = scanner.nextLine().trim();
             String[] split = line.split(SPACE);
-             switch (split[0]) {
+            switch (split[0]) {
                 case PUT:
                     this.put(split);
                     break;
@@ -65,18 +71,18 @@ public class CommandProcessor {
                 default:
                     this.printUsage();
                     break;
-             }
+            }
         }
     }
 
-    private void put(String[] split){
+    private void put(String[] split) {
 
         // check if input is valid
         if (!this.inputIsValid(split)) {
             this.printUsage();
             return;
         }
-        
+
         // get the tuple
         String tuple = split[1];
 
@@ -85,13 +91,13 @@ public class CommandProcessor {
         System.out.println("");
     }
 
-    private void read(String[] split){
+    private void read(String[] split) {
         // check if input is valid
         if (!this.inputIsValid(split)) {
             this.printUsage();
             return;
         }
-        
+
         // get the tuple
         String tuple = split[1];
 
@@ -102,27 +108,71 @@ public class CommandProcessor {
         System.out.println("");
     }
 
-
-    private void take(String[] split){
-         // check if input is valid
+    private void take(String[] split) {
+        // check if input is valid
         if (!this.inputIsValid(split)) {
             this.printUsage();
             return;
         }
-        
-        // get the tuple
-        String tuple = split[1];
 
-        // take the tuple
-        String result = clientService.take(tuple);
+        // get the pattern
+        String pattern = split[1];
+
+        String finalTuple;
+        while (true) {
+            Map<Integer, List<String>> takePhase1Result = clientService.takePhase1(pattern, 0);
+
+            // Get the union of all the responses
+            Set<String> allTuples = new HashSet<>();
+            takePhase1Result.entrySet().stream().forEach(entry -> {
+                entry.getValue().stream().forEach(tuple -> {
+                    allTuples.add(tuple);
+                });
+            });
+
+            Map<String, Long> counts = new HashMap<>();
+
+            allTuples.stream().forEach(tuple -> {
+                long count = takePhase1Result.entrySet().stream()
+                        .filter(entry -> entry.getValue().contains(tuple))
+                        .count();
+
+                counts.put(tuple, count);
+            });
+
+            // Check if any tuple is in all servers
+
+            List<String> validTuples = new ArrayList<>();
+            counts.entrySet().stream()
+                    .filter(count -> count.getValue() == takePhase1Result.size())
+                    .forEach(count -> validTuples.add(count.getKey()));
+
+            if (!validTuples.isEmpty()) {
+                finalTuple = validTuples.get((new Random().nextInt(validTuples.size())));
+                break;
+            }
+
+            // Release the tuples
+            clientService.takePhase1Release(0);
+
+            // Wait random amount of time
+            try {
+                Thread.sleep((long) (Math.random() * 1000));
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        clientService.takePhase2(finalTuple, 0);
+
         System.out.println("OK");
-        System.out.println(result);
+        System.out.println(finalTuple);
         System.out.println("");
     }
 
-    private void getTupleSpacesState(String[] split){
+    private void getTupleSpacesState(String[] split) {
 
-        if (split.length != 2){
+        if (split.length != 2) {
             this.printUsage();
             return;
         }
@@ -130,7 +180,7 @@ public class CommandProcessor {
 
         int index = indexOfServerQualifier(qualifier);
 
-        if (index == -1){
+        if (index == -1) {
             this.printUsage();
             return;
         }
@@ -143,51 +193,53 @@ public class CommandProcessor {
     }
 
     private void sleep(String[] split) {
-      if (split.length != 2){
-        this.printUsage();
-        return;
-      }
-      Integer time;
+        if (split.length != 2) {
+            this.printUsage();
+            return;
+        }
+        Integer time;
 
-      // checks if input String can be parsed as an Integer
-      try {
-         time = Integer.parseInt(split[1]);
-      } catch (NumberFormatException e) {
-        this.printUsage();
-        return;
-      }
+        // checks if input String can be parsed as an Integer
+        try {
+            time = Integer.parseInt(split[1]);
+        } catch (NumberFormatException e) {
+            this.printUsage();
+            return;
+        }
 
-      try {
-        Thread.sleep(time*1000);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
+        try {
+            Thread.sleep(time * 1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void setdelay(String[] split) {
-      if (split.length != 3){
-        this.printUsage();
-        return;
-      }
-      String qualifier = split[1];
-      Integer time;
+        if (split.length != 3) {
+            this.printUsage();
+            return;
+        }
+        String qualifier = split[1];
+        Integer time;
 
-      // checks if input String can be parsed as an Integer
-      try {
-        time = Integer.parseInt(split[2]);
-      } catch (NumberFormatException e) {
-        this.printUsage();
-        return;
-      }
+        // checks if input String can be parsed as an Integer
+        try {
+            time = Integer.parseInt(split[2]);
+        } catch (NumberFormatException e) {
+            this.printUsage();
+            return;
+        }
 
-      int index = indexOfServerQualifier(qualifier);
+        int index = indexOfServerQualifier(qualifier);
 
-      if (index == -1){
-        this.printUsage();
-        return;
-      }
+        if (index == -1) {
+            this.printUsage();
+            return;
+        }
 
-      clientService.setDelay(index, time);
+        clientService.setDelay(index, time);
+        System.out.println("");
+        System.out.println("");
     }
 
     private void printUsage() {
@@ -214,19 +266,17 @@ public class CommandProcessor {
         }
     }
 
-    private boolean inputIsValid(String[] input){
-        if (input.length < 2 
-            ||
-            !input[1].substring(0,1).equals(BGN_TUPLE) 
-            || 
-            !input[1].endsWith(END_TUPLE)
-            || 
-            input.length > 2
-            ) {
+    private boolean inputIsValid(String[] input) {
+        if (input.length < 2
+                ||
+                !input[1].substring(0, 1).equals(BGN_TUPLE)
+                ||
+                !input[1].endsWith(END_TUPLE)
+                ||
+                input.length > 2) {
             this.printUsage();
             return false;
-        }
-        else {
+        } else {
             return true;
         }
     }
