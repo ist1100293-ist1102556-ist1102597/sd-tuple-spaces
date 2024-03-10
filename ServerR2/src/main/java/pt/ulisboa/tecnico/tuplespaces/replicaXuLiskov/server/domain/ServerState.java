@@ -86,10 +86,14 @@ public class ServerState {
     return Optional.of(matchingTuples);
   }
 
-  public void takePhase1Release(int clientId) {
+  public void releaseClientLocks(int clientId) {
     tuples.stream()
         .filter(tuple -> tuple.isLocked() && tuple.getOwner() == clientId)
         .forEach(tuple -> tuple.unlock(clientId));
+  }
+
+  public void takePhase1Release(int clientId) {
+    releaseClientLocks(clientId);
   }
 
   public void takePhase2(String tuple, int clientId) {
@@ -99,7 +103,8 @@ public class ServerState {
         .orElseThrow(() -> new RuntimeException("No matching tuple found"));
 
     tuples.remove(matchingTuple);
-    takePhase1Release(clientId);
+    // Needs to release the other locks
+    releaseClientLocks(clientId);
   }
 
   public List<String> getTupleSpacesState() {
