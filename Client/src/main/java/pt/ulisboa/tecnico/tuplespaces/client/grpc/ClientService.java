@@ -37,7 +37,6 @@ public class ClientService {
   private final List<ManagedChannel> channels = new ArrayList<>();
   private int clientId;
 
-
   public ClientService(List<String> servers, Integer clientId) {
     delayer = new OrderedDelayer(servers.size());
     this.clientId = clientId;
@@ -91,7 +90,7 @@ public class ClientService {
 
   public Map<Integer, List<String>> takePhase1(String pattern) {
     HashMap<Integer, List<String>> result = new HashMap<>();
-    
+
     TakePhase1Request request = TakePhase1Request.newBuilder().setSearchPattern(pattern).setClientId(clientId).build();
     TakePhase1ResponseCollector collector = new TakePhase1ResponseCollector(stubs.size());
 
@@ -112,13 +111,43 @@ public class ClientService {
     return result;
   }
 
+  public List<String> takePhase1(String pattern, Integer index) {
+    TakePhase1Request request = TakePhase1Request.newBuilder().setSearchPattern(pattern).setClientId(clientId).build();
+    TakePhase1ResponseCollector collector = new TakePhase1ResponseCollector(1);
+
+    for (Integer i : delayer) {
+      if (index == i) {
+        TupleSpacesObserver<TakePhase1Response> observer = new TupleSpacesObserver<>(collector, index);
+        stubs.get(index).takePhase1(request, observer);
+        break;
+      }
+    }
+
+    return collector.waitForResponses().get(index).getReservedTuplesList();
+  }
+
   public void takePhase1Release() {
     TakePhase1ReleaseRequest request = TakePhase1ReleaseRequest.newBuilder().setClientId(clientId).build();
     TakePhase1ReleaseResponseCollector collector = new TakePhase1ReleaseResponseCollector(stubs.size());
 
     for (Integer index : delayer) {
+      TupleSpacesObserver<TakePhase1ReleaseResponse> observer = new TupleSpacesObserver<>(collector, index);
+      stubs.get(index).takePhase1Release(request, observer);
+    }
+
+    collector.waitForResponses();
+  }
+
+  public void takePhase1Release(Integer index) {
+    TakePhase1ReleaseRequest request = TakePhase1ReleaseRequest.newBuilder().setClientId(clientId).build();
+    TakePhase1ReleaseResponseCollector collector = new TakePhase1ReleaseResponseCollector(1);
+
+    for (Integer i : delayer) {
+      if (index == i) {
         TupleSpacesObserver<TakePhase1ReleaseResponse> observer = new TupleSpacesObserver<>(collector, index);
         stubs.get(index).takePhase1Release(request, observer);
+        break; // Break so that the higher delays are ignored
+      }
     }
 
     collector.waitForResponses();

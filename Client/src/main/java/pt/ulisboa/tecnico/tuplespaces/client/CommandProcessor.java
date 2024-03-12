@@ -142,25 +142,38 @@ public class CommandProcessor {
 
             // Check if any tuple is in all servers
 
-            List<String> validTuples = new ArrayList<>();
+            List<String> intersection = new ArrayList<>();
             counts.entrySet().stream()
                     .filter(count -> count.getValue() == takePhase1Result.size())
-                    .forEach(count -> validTuples.add(count.getKey()));
+                    .forEach(count -> intersection.add(count.getKey()));
 
-            if (!validTuples.isEmpty()) {
-                finalTuple = validTuples.get((new Random().nextInt(validTuples.size())));
+            if (!intersection.isEmpty()) {
+                finalTuple = intersection.get((new Random().nextInt(intersection.size())));
+                break;
+            }
+
+            List<String> majority = new ArrayList<>();
+            counts.entrySet().stream()
+                    .filter(count -> count.getValue() == 2)
+                    .forEach(count -> majority.add(count.getKey()));
+
+            if (!majority.isEmpty()) {
+                String choice = majority.get((new Random()).nextInt(majority.size()));
+                // Find the server that did not return the choice
+                int missingServer = takePhase1Result.entrySet().stream()
+                        .filter(entry -> !entry.getValue().contains(choice))
+                        .findFirst()
+                        .get()
+                        .getKey();
+
+                finalTuple = retrySingleServer(choice, missingServer);
                 break;
             }
 
             // Release the tuples
             clientService.takePhase1Release();
 
-            // Wait random amount of time
-            try {
-                Thread.sleep((long) (Math.random() * 1000));
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            sleepRandom();
         }
 
         clientService.takePhase2(finalTuple);
@@ -168,6 +181,28 @@ public class CommandProcessor {
         System.out.println("OK");
         System.out.println(finalTuple);
         System.out.println("");
+    }
+
+    private String retrySingleServer(String tuple, Integer index) {
+        clientService.takePhase1Release(index);
+        while (true) {
+            List<String> result = clientService.takePhase1(tuple, index);
+            if (result.size() != 0) {
+                return result.get(0);
+            }
+
+            clientService.takePhase1Release(index);
+            sleepRandom();            
+        }
+
+    }
+    
+    private void sleepRandom() {
+        try {
+            Thread.sleep((long) (Math.random() * 1000));
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void getTupleSpacesState(String[] split) {
