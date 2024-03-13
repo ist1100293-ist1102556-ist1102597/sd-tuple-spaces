@@ -14,7 +14,7 @@ public class GetTupleSpacesStateResponseCollector implements ResponseCollector<g
 	}
 
 	@Override
-	public synchronized void sendError(Throwable t) {
+	public synchronized void sendError(RuntimeException t) {
         error = t;
         notifyAll();
 	}

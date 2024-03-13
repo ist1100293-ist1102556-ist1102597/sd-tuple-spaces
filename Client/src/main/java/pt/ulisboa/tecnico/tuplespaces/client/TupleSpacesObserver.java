@@ -20,7 +20,9 @@ public class TupleSpacesObserver<R> implements StreamObserver<R> {
 
     @Override
     public void onError(Throwable t) {
-        
+        if(t instanceof RuntimeException){
+            responseCollector.sendError((RuntimeException) t);
+        }
     }
 
     @Override

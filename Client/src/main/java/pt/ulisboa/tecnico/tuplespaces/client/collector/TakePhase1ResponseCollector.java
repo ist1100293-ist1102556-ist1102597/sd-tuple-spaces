@@ -10,6 +10,7 @@ public class TakePhase1ResponseCollector implements ResponseCollector<TakePhase1
     private int numServers;
     private int numResponses = 0;
     Map<Integer, TakePhase1Response> responses = new HashMap<>();
+    private RuntimeException error = null;
 
     public TakePhase1ResponseCollector(int numServers) {
         this.numServers = numServers;
@@ -23,7 +24,8 @@ public class TakePhase1ResponseCollector implements ResponseCollector<TakePhase1
     }
 
 	@Override
-	public synchronized void sendError(Throwable t) {
+	public synchronized void sendError(RuntimeException t) {
+        error = t;
         numResponses++;
         notifyAll();
 	}
@@ -34,6 +36,9 @@ public class TakePhase1ResponseCollector implements ResponseCollector<TakePhase1
                 wait();
             } catch (InterruptedException e) {
                 e.printStackTrace();
+            }
+            if (error != null){
+                throw error;
             }
         }
         return responses;

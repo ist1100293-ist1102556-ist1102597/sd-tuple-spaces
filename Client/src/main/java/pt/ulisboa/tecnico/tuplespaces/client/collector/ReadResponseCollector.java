@@ -8,6 +8,7 @@ public class ReadResponseCollector implements ResponseCollector<ReadResponse> {
     private ReadResponse response;
     private int numResponses = 0;
     private int numServers;
+    private RuntimeException error;
 
     public ReadResponseCollector(int numServers) {
         this.numServers = numServers;
@@ -31,14 +32,15 @@ public class ReadResponseCollector implements ResponseCollector<ReadResponse> {
                 e.printStackTrace();
             }
             if (numResponses == numServers && !hasResponse) {
-                throw new RuntimeException("No response received");
+                throw error;
             }
         }
         return response;
     }
 
     @Override
-    public synchronized void sendError(Throwable t) {
+    public synchronized void sendError(RuntimeException t) {
+        error = t;
         numResponses++;
         notifyAll();
     }

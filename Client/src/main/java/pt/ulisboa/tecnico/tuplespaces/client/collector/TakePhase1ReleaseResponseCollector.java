@@ -18,7 +18,7 @@ public class TakePhase1ReleaseResponseCollector implements ResponseCollector<Tak
     }
 
 	@Override
-	public synchronized void sendError(Throwable t) {
+	public synchronized void sendError(RuntimeException t) {
         numResponses++;
         notifyAll();
     }

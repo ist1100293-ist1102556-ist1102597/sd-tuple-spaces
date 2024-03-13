@@ -11,6 +11,8 @@ import java.util.Random;
 import java.util.Scanner;
 import java.util.Set;
 
+import io.grpc.StatusRuntimeException;
+
 public class CommandProcessor {
 
     private static final String SPACE = " ";
@@ -86,7 +88,13 @@ public class CommandProcessor {
         // get the tuple
         String tuple = split[1];
 
-        clientService.put(tuple);
+        try{
+            clientService.put(tuple);
+        } catch (StatusRuntimeException e){
+            System.out.println("ERR: " + e.getStatus().getDescription() + "\n");
+            return;
+        }
+
         System.out.println("OK");
         System.out.println("");
     }
@@ -102,7 +110,15 @@ public class CommandProcessor {
         String tuple = split[1];
 
         // read the tuple
-        String result = clientService.read(tuple);
+        String result;
+
+        try{
+            result = clientService.read(tuple);
+        } catch (StatusRuntimeException e){
+            System.out.println("ERR: " + e.getStatus().getDescription() + "\n");
+            return;
+        }
+
         System.out.println("OK");
         System.out.println(result);
         System.out.println("");
@@ -120,7 +136,14 @@ public class CommandProcessor {
 
         String finalTuple;
         while (true) {
-            Map<Integer, List<String>> takePhase1Result = clientService.takePhase1(pattern);
+            Map<Integer, List<String>> takePhase1Result;
+
+            try{
+                takePhase1Result = clientService.takePhase1(pattern);
+            } catch (StatusRuntimeException e){
+                System.out.println("ERR: " + e.getStatus().getDescription() + "\n");
+                return;
+            }
 
             // Get the union of all the responses
             Set<String> allTuples = new HashSet<>();
@@ -176,7 +199,12 @@ public class CommandProcessor {
             sleepRandom();
         }
 
-        clientService.takePhase2(finalTuple);
+        try{
+            clientService.takePhase2(finalTuple);
+        } catch (StatusRuntimeException e){
+            System.out.println("ERR: " + e.getStatus().getDescription() + "\n");
+            return;
+        }
 
         System.out.println("OK");
         System.out.println(finalTuple);

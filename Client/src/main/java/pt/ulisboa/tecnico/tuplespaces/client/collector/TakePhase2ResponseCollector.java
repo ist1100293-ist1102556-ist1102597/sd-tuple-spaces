@@ -18,7 +18,7 @@ public class TakePhase2ResponseCollector implements ResponseCollector<TakePhase2
     }
 
 	@Override
-	public synchronized void sendError(Throwable t) {
+	public synchronized void sendError(RuntimeException t) {
 		numResponses++;
         notifyAll();
 	}

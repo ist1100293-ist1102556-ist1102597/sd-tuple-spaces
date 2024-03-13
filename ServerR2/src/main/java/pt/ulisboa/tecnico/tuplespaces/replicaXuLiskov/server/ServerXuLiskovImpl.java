@@ -6,16 +6,25 @@ import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplic
 import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.server.domain.ServerState;
 
 import static io.grpc.Status.CANCELLED;
+import static io.grpc.Status.INVALID_ARGUMENT;
 
 import java.util.List;
 import java.util.Optional;
 
 public class ServerXuLiskovImpl extends TupleSpacesReplicaImplBase {
 
+    private static final String BGN_TUPLE = "<";
+    private static final String END_TUPLE = ">";
+
     private ServerState serverState = new ServerState();
 
     @Override
     public synchronized void put(PutRequest request, StreamObserver<PutResponse> responseObserver) {
+        if(!inputIsValid(request.getNewTuple())){
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Input has to be a valid tuple").asRuntimeException());
+            return;
+        }
+
         serverState.put(request.getNewTuple());
         notifyAll();
         PutResponse response = PutResponse.newBuilder().build();
@@ -25,6 +34,11 @@ public class ServerXuLiskovImpl extends TupleSpacesReplicaImplBase {
 
     @Override
     public synchronized void read(ReadRequest request, StreamObserver<ReadResponse> responseObserver) {
+        if(!inputIsValid(request.getSearchPattern())){
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Input has to be a valid search pattern").asRuntimeException());
+            return;
+        }
+
         String tuple = serverState.read(request.getSearchPattern());
         while(tuple == null){
             try {
@@ -43,6 +57,11 @@ public class ServerXuLiskovImpl extends TupleSpacesReplicaImplBase {
     public synchronized void takePhase1(TakePhase1Request request, StreamObserver<TakePhase1Response> responseObserver) {
         Optional<List<String>> tuples;
         
+        if(!inputIsValid(request.getSearchPattern())){
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Input has to be a valid search pattern").asRuntimeException());
+            return;
+        }
+
         while((tuples = serverState.takePhase1(request.getSearchPattern(), request.getClientId())).isEmpty()){
             try {
                 wait();
@@ -67,6 +86,11 @@ public class ServerXuLiskovImpl extends TupleSpacesReplicaImplBase {
 
     @Override
     public synchronized void takePhase2(TakePhase2Request request, StreamObserver<TakePhase2Response> responseObserver) {
+        if(!inputIsValid(request.getTuple())){
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Input has to be a valid tuple").asRuntimeException());
+            return;
+        }
+        
         serverState.takePhase2(request.getTuple(), request.getClientId());
         TakePhase2Response response = TakePhase2Response.newBuilder().build();
         responseObserver.onNext(response);
@@ -79,6 +103,18 @@ public class ServerXuLiskovImpl extends TupleSpacesReplicaImplBase {
         getTupleSpacesStateResponse response = getTupleSpacesStateResponse.newBuilder().addAllTuple(tuples).build();
         responseObserver.onNext(response);
         responseObserver.onCompleted(); 
+    }
+
+    private boolean inputIsValid(String input) {
+        if (input.length() < 2
+                ||
+                !input.startsWith(BGN_TUPLE)
+                ||
+                !input.endsWith(END_TUPLE)) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
 }

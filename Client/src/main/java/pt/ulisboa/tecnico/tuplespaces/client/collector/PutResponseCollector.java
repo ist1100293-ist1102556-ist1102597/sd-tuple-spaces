@@ -7,6 +7,7 @@ public class PutResponseCollector implements ResponseCollector<PutResponse>{
     private int numValidResponses = 0;
     private int numResponses = 0;
     private int numServers;
+    private RuntimeException error;
 
     public PutResponseCollector(int numServers) {
         this.numServers = numServers;
@@ -28,12 +29,13 @@ public class PutResponseCollector implements ResponseCollector<PutResponse>{
             }
         }
         if (numValidResponses == 0) { // In case all servers are "dead"
-            throw new RuntimeException("No response received");
+            throw error;
         } // Otherwise, we have at least one valid response
     }
 
     @Override
-    public synchronized void sendError(Throwable t) {
+    public synchronized void sendError(RuntimeException t) {
+        error = t;
         numResponses++;
         notifyAll();
     }
