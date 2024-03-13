@@ -68,6 +68,7 @@ public class CommandProcessor {
 
                 case EXIT:
                     exit = true;
+                    this.exit();
                     break;
 
                 default:
@@ -275,6 +276,11 @@ public class CommandProcessor {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void exit(){
+        clientService.shutdownChannel();
+        System.out.println("Exiting...");
     }
 
     private void setdelay(String[] split) {
