@@ -14,6 +14,7 @@ import pt.ulisboa.tecnico.tuplespaces.client.collector.ReadResponseCollector;
 import pt.ulisboa.tecnico.tuplespaces.client.collector.TakePhase1ReleaseResponseCollector;
 import pt.ulisboa.tecnico.tuplespaces.client.collector.TakePhase1ResponseCollector;
 import pt.ulisboa.tecnico.tuplespaces.client.collector.TakePhase2ResponseCollector;
+import pt.ulisboa.tecnico.tuplespaces.client.util.InterruptedRuntimeException;
 import pt.ulisboa.tecnico.tuplespaces.client.util.OrderedDelayer;
 import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaGrpc;
 import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaGrpc.TupleSpacesReplicaStub;
@@ -80,12 +81,24 @@ public class ClientService {
     ReadRequest request = ReadRequest.newBuilder().setSearchPattern(pattern).build();
     ReadResponseCollector collector = new ReadResponseCollector(this.stubs.size());
 
-    for (Integer index : delayer) {
-      TupleSpacesObserver<ReadResponse> observer = new TupleSpacesObserver<>(collector, index);
-      stubs.get(index).read(request, observer);
-    }
+    Thread thread = (new Thread(() -> {
+      try {
+        for (Integer index : delayer) {
+          TupleSpacesObserver<ReadResponse> observer = new TupleSpacesObserver<>(collector, index);
+          stubs.get(index).read(request, observer);
+        }
+      } catch (InterruptedRuntimeException e) {
+        return;
+      }
+    }));
+    
+    thread.start();
 
-    return collector.getResponse().getResult();
+    String result = collector.getResponse().getResult();
+
+    thread.interrupt();
+
+    return result;
   }
 
   public Map<Integer, List<String>> takePhase1(String pattern) {

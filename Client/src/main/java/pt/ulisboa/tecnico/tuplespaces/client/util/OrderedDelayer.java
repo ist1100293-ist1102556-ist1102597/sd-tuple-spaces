@@ -46,7 +46,7 @@ public class OrderedDelayer implements Iterable<Integer> {
                         // System.out.println("will sleep for " + secsToSleep);
                         Thread.sleep((dp.delay - alreadySlept) * 1000);
                     } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
+                        throw new InterruptedRuntimeException();
                     }
                 alreadySlept += secsToSleep;
                 return dp.id;
