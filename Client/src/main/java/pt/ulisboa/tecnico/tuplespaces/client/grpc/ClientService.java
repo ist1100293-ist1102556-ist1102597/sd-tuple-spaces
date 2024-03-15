@@ -105,7 +105,7 @@ public class ClientService {
   }
 
   public Map<Integer, List<String>> takePhase1(String pattern) {
-    HashMap<Integer, List<String>> result = new HashMap<>();
+    HashMap<Integer, List<String>> result = new HashMap<>(); // serverID: TupleList
 
     TakePhase1Request request = TakePhase1Request.newBuilder().setSearchPattern(pattern).setClientId(clientId).build();
     TakePhase1ResponseCollector collector = new TakePhase1ResponseCollector(stubs.size());
@@ -120,7 +120,7 @@ public class ClientService {
     responses.entrySet().stream().forEach(entry -> {
       int index = entry.getKey();
       TakePhase1Response response = entry.getValue();
-
+      //Populate the result map
       result.put(index, response.getReservedTuplesList());
     });
 
@@ -128,14 +128,15 @@ public class ClientService {
   }
 
   public List<String> takePhase1(String pattern, Integer index) {
+    //We use this function if we want to take from a specific server
     TakePhase1Request request = TakePhase1Request.newBuilder().setSearchPattern(pattern).setClientId(clientId).build();
     TakePhase1ResponseCollector collector = new TakePhase1ResponseCollector(1);
 
     for (Integer i : delayer) {
-      if (index == i) {
+      if (index == i) { //If the index is the one we want to take from
         TupleSpacesObserver<TakePhase1Response> observer = new TupleSpacesObserver<>(collector, index);
         stubs.get(index).takePhase1(request, observer);
-        break;
+        break; // Break so that the higher delays are ignored
       }
     }
 
@@ -155,11 +156,12 @@ public class ClientService {
   }
 
   public void takePhase1Release(Integer index) {
+    //We use this function if we want to release from a specific server
     TakePhase1ReleaseRequest request = TakePhase1ReleaseRequest.newBuilder().setClientId(clientId).build();
     TakePhase1ReleaseResponseCollector collector = new TakePhase1ReleaseResponseCollector(1);
 
     for (Integer i : delayer) {
-      if (index == i) {
+      if (index == i) { //If the index is the one we want to take from
         TupleSpacesObserver<TakePhase1ReleaseResponse> observer = new TupleSpacesObserver<>(collector, index);
         stubs.get(index).takePhase1Release(request, observer);
         break; // Break so that the higher delays are ignored
