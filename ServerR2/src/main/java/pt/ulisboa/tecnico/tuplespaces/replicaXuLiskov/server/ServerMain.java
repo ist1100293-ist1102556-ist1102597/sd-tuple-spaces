@@ -19,7 +19,7 @@ public class ServerMain {
 
     if (args.length < 4) {
       System.err.println("Argument(s) missing!");
-      System.err.printf("Usage: java %s host port qual service%n", ServerMain.class.getName());
+      System.err.printf("mvn exec:java -Dexec.args=<host> <port> <qualifier> <service>%n", ServerMain.class.getName());
       return;
     }
 
