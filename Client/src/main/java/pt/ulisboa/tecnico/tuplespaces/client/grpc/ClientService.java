@@ -81,6 +81,7 @@ public class ClientService {
     ReadRequest request = ReadRequest.newBuilder().setSearchPattern(pattern).build();
     ReadResponseCollector collector = new ReadResponseCollector(this.stubs.size());
 
+    // Launch a second thread with the objective of launching the grpc calls
     Thread thread = (new Thread(() -> {
       try {
         for (Integer index : delayer) {
@@ -91,11 +92,13 @@ public class ClientService {
         return;
       }
     }));
-    
+
     thread.start();
 
     String result = collector.getResponse().getResult();
 
+    // After we get the result, we can interrupt the thread, meaning that very high
+    // delays don't block the client when the main thread stops (exit).
     thread.interrupt();
 
     return result;
