@@ -4,23 +4,39 @@ import pt.ulisboa.tecnico.tuplespaces.replicaTotalOrder.contract.TupleSpacesRepl
 
 public class TakeResponseCollector implements ResponseCollector<TakeResponse> {
 
+    private int numValidResponses = 0;
+    private int numResponses = 0;
+    private int numServers;
+    private RuntimeException error;
+
     public TakeResponseCollector(int numServers) {
-        // TODO: implement this constructor
+        this.numServers = numServers;
     }
 
     @Override
 	public synchronized void addResponse(TakeResponse r, Integer server) {
-        // TODO: implement this method
+        numValidResponses++;
+        numResponses++;
         notifyAll();
     }
 
 	@Override
 	public synchronized void sendError(RuntimeException t) {
-        // TODO: implement this method
+        error = t;
+        numResponses++;
         notifyAll();
 	}
 
     public synchronized void waitForResponses() {
-        // TODO: Implement this method
+        while (numResponses < numServers) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        if (numValidResponses == 0) { // In case all servers are "dead"
+            throw error;
+        } // Otherwise, we have at least one valid response
     }
 }
