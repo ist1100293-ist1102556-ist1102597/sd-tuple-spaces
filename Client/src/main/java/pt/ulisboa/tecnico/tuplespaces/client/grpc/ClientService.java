@@ -15,14 +15,19 @@ import pt.ulisboa.tecnico.tuplespaces.client.util.OrderedDelayer;
 import pt.ulisboa.tecnico.tuplespaces.replicaTotalOrder.contract.TupleSpacesReplicaGrpc;
 import pt.ulisboa.tecnico.tuplespaces.replicaTotalOrder.contract.TupleSpacesReplicaGrpc.TupleSpacesReplicaStub;
 import pt.ulisboa.tecnico.tuplespaces.replicaTotalOrder.contract.TupleSpacesReplicaTotalOrder.*;
+import pt.ulisboa.tecnico.sequencer.contract.SequencerGrpc.*;
+import pt.ulisboa.tecnico.sequencer.contract.SequencerOuterClass.GetSeqNumberRequest;
+import pt.ulisboa.tecnico.sequencer.contract.SequencerGrpc;
 
 public class ClientService {
 
   OrderedDelayer delayer;
   private final List<TupleSpacesReplicaStub> stubs = new ArrayList<>();
   private final List<ManagedChannel> channels = new ArrayList<>();
+  private final SequencerBlockingStub sequencerStub;
+  private final ManagedChannel sequencerChannel;
 
-  public ClientService(List<String> servers) {
+  public ClientService(List<String> servers, String sequencerPort) {
     delayer = new OrderedDelayer(servers.size());
 
     for (String server : servers) {
@@ -34,10 +39,13 @@ public class ClientService {
       this.stubs.add(TupleSpacesReplicaGrpc.newStub(channel));
     }
 
+    sequencerChannel = ManagedChannelBuilder.forAddress("localhost", Integer.parseInt(sequencerPort)).usePlaintext().build();
+    sequencerStub = SequencerGrpc.newBlockingStub(sequencerChannel);
   }
 
   public void shutdownChannel() {
     this.channels.stream().forEach(ManagedChannel::shutdownNow);
+    this.sequencerChannel.shutdownNow();
   }
 
   /*
@@ -49,8 +57,7 @@ public class ClientService {
   }
 
   public void put(String tuple) {
-    // TODO: Add sequence number coming from the sequencer
-    PutRequest request = PutRequest.newBuilder().setNewTuple(tuple).build();
+    PutRequest request = PutRequest.newBuilder().setNewTuple(tuple).setSeqNumber(getSequenceNumber()).build();
     PutResponseCollector collector = new PutResponseCollector(this.stubs.size());
 
     for (Integer index : delayer) {
@@ -89,8 +96,7 @@ public class ClientService {
   }
 
   public void take(String tuple){
-    // TODO: Add sequence number coming from the sequencer
-    TakeRequest request = TakeRequest.newBuilder().setSearchPattern(tuple).build();
+    TakeRequest request = TakeRequest.newBuilder().setSearchPattern(tuple).setSeqNumber(getSequenceNumber()).build();
     TakeResponseCollector collector = new TakeResponseCollector(stubs.size());
 
     for (Integer index : delayer) {
@@ -116,5 +122,10 @@ public class ClientService {
     stub.getTupleSpacesState(request, observer);
 
     return collector.getResponse().getTupleList();
+  }
+
+  public int getSequenceNumber() {
+    GetSeqNumberRequest request = GetSeqNumberRequest.newBuilder().build();
+    return sequencerStub.getSeqNumber(request).getSeqNumber();
   }
 }

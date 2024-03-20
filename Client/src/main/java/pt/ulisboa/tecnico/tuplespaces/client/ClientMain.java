@@ -26,6 +26,7 @@ public class ClientMain {
         final String nameServerHost = args[0];
         final Integer nameServerPort = Integer.parseInt(args[1]);
         final String serviceName = args[2];
+        final String sequencerPort = "8080";
 
         String[] qualifiers = {"A", "B", "C"};
         List<String> servers = new ArrayList<>();
@@ -35,7 +36,7 @@ public class ClientMain {
             servers.add(server);
         }
 
-        CommandProcessor parser = new CommandProcessor(new ClientService(servers));
+        CommandProcessor parser = new CommandProcessor(new ClientService(servers,sequencerPort));
         parser.parseInput();
     }
 
