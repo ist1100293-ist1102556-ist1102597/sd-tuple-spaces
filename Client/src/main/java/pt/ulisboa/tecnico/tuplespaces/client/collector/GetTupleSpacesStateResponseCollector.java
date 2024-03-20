@@ -1,6 +1,6 @@
 package pt.ulisboa.tecnico.tuplespaces.client.collector;
 
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.getTupleSpacesStateResponse;
+import pt.ulisboa.tecnico.tuplespaces.replicaTotalOrder.contract.TupleSpacesReplicaTotalOrder.getTupleSpacesStateResponse;
 
 public class GetTupleSpacesStateResponseCollector implements ResponseCollector<getTupleSpacesStateResponse> {
 
@@ -34,7 +34,4 @@ public class GetTupleSpacesStateResponseCollector implements ResponseCollector<g
 
         return response;
     }
-
-	
-    
 }

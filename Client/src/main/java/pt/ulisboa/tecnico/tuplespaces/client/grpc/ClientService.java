@@ -1,9 +1,7 @@
 package pt.ulisboa.tecnico.tuplespaces.client.grpc;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -11,36 +9,21 @@ import pt.ulisboa.tecnico.tuplespaces.client.TupleSpacesObserver;
 import pt.ulisboa.tecnico.tuplespaces.client.collector.GetTupleSpacesStateResponseCollector;
 import pt.ulisboa.tecnico.tuplespaces.client.collector.PutResponseCollector;
 import pt.ulisboa.tecnico.tuplespaces.client.collector.ReadResponseCollector;
-import pt.ulisboa.tecnico.tuplespaces.client.collector.TakePhase1ReleaseResponseCollector;
-import pt.ulisboa.tecnico.tuplespaces.client.collector.TakePhase1ResponseCollector;
-import pt.ulisboa.tecnico.tuplespaces.client.collector.TakePhase2ResponseCollector;
+import pt.ulisboa.tecnico.tuplespaces.client.collector.TakeResponseCollector;
 import pt.ulisboa.tecnico.tuplespaces.client.util.InterruptedRuntimeException;
 import pt.ulisboa.tecnico.tuplespaces.client.util.OrderedDelayer;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaGrpc;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaGrpc.TupleSpacesReplicaStub;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.PutRequest;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.PutResponse;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.ReadRequest;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.ReadResponse;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.TakePhase1ReleaseRequest;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.TakePhase1ReleaseResponse;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.TakePhase1Request;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.TakePhase1Response;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.TakePhase2Request;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.TakePhase2Response;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.getTupleSpacesStateRequest;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.getTupleSpacesStateResponse;
+import pt.ulisboa.tecnico.tuplespaces.replicaTotalOrder.contract.TupleSpacesReplicaGrpc;
+import pt.ulisboa.tecnico.tuplespaces.replicaTotalOrder.contract.TupleSpacesReplicaGrpc.TupleSpacesReplicaStub;
+import pt.ulisboa.tecnico.tuplespaces.replicaTotalOrder.contract.TupleSpacesReplicaTotalOrder.*;
 
 public class ClientService {
 
   OrderedDelayer delayer;
   private final List<TupleSpacesReplicaStub> stubs = new ArrayList<>();
   private final List<ManagedChannel> channels = new ArrayList<>();
-  private int clientId;
 
-  public ClientService(List<String> servers, Integer clientId) {
+  public ClientService(List<String> servers) {
     delayer = new OrderedDelayer(servers.size());
-    this.clientId = clientId;
 
     for (String server : servers) {
       String[] parts = server.split(":");
@@ -66,6 +49,7 @@ public class ClientService {
   }
 
   public void put(String tuple) {
+    // TODO: Add sequence number coming from the sequencer
     PutRequest request = PutRequest.newBuilder().setNewTuple(tuple).build();
     PutResponseCollector collector = new PutResponseCollector(this.stubs.size());
 
@@ -104,80 +88,14 @@ public class ClientService {
     return result;
   }
 
-  public Map<Integer, List<String>> takePhase1(String pattern) {
-    HashMap<Integer, List<String>> result = new HashMap<>(); // serverID: TupleList
-
-    TakePhase1Request request = TakePhase1Request.newBuilder().setSearchPattern(pattern).setClientId(clientId).build();
-    TakePhase1ResponseCollector collector = new TakePhase1ResponseCollector(stubs.size());
-
-    for (Integer index : delayer) {
-      TupleSpacesObserver<TakePhase1Response> observer = new TupleSpacesObserver<>(collector, index);
-      stubs.get(index).takePhase1(request, observer);
-    }
-
-    Map<Integer, TakePhase1Response> responses = collector.waitForResponses();
-
-    responses.entrySet().stream().forEach(entry -> {
-      int index = entry.getKey();
-      TakePhase1Response response = entry.getValue();
-      //Populate the result map
-      result.put(index, response.getReservedTuplesList());
-    });
-
-    return result;
-  }
-
-  public List<String> takePhase1(String pattern, Integer index) {
-    //We use this function if we want to take from a specific server
-    TakePhase1Request request = TakePhase1Request.newBuilder().setSearchPattern(pattern).setClientId(clientId).build();
-    TakePhase1ResponseCollector collector = new TakePhase1ResponseCollector(1);
-
-    for (Integer i : delayer) {
-      if (index == i) { //If the index is the one we want to take from
-        TupleSpacesObserver<TakePhase1Response> observer = new TupleSpacesObserver<>(collector, index);
-        stubs.get(index).takePhase1(request, observer);
-        break; // Break so that the higher delays are ignored
-      }
-    }
-
-    return collector.waitForResponses().get(index).getReservedTuplesList();
-  }
-
-  public void takePhase1Release() {
-    TakePhase1ReleaseRequest request = TakePhase1ReleaseRequest.newBuilder().setClientId(clientId).build();
-    TakePhase1ReleaseResponseCollector collector = new TakePhase1ReleaseResponseCollector(stubs.size());
+  public void take(String tuple){
+    // TODO: Add sequence number coming from the sequencer
+    TakeRequest request = TakeRequest.newBuilder().setSearchPattern(tuple).build();
+    TakeResponseCollector collector = new TakeResponseCollector(stubs.size());
 
     for (Integer index : delayer) {
-      TupleSpacesObserver<TakePhase1ReleaseResponse> observer = new TupleSpacesObserver<>(collector, index);
-      stubs.get(index).takePhase1Release(request, observer);
-    }
-
-    collector.waitForResponses();
-  }
-
-  public void takePhase1Release(Integer index) {
-    //We use this function if we want to release from a specific server
-    TakePhase1ReleaseRequest request = TakePhase1ReleaseRequest.newBuilder().setClientId(clientId).build();
-    TakePhase1ReleaseResponseCollector collector = new TakePhase1ReleaseResponseCollector(1);
-
-    for (Integer i : delayer) {
-      if (index == i) { //If the index is the one we want to take from
-        TupleSpacesObserver<TakePhase1ReleaseResponse> observer = new TupleSpacesObserver<>(collector, index);
-        stubs.get(index).takePhase1Release(request, observer);
-        break; // Break so that the higher delays are ignored
-      }
-    }
-
-    collector.waitForResponses();
-  }
-
-  public void takePhase2(String tuple) {
-    TakePhase2Request request = TakePhase2Request.newBuilder().setTuple(tuple).setClientId(clientId).build();
-    TakePhase2ResponseCollector collector = new TakePhase2ResponseCollector(stubs.size());
-
-    for (Integer index : delayer) {
-      TupleSpacesObserver<TakePhase2Response> observer = new TupleSpacesObserver<>(collector, index);
-      stubs.get(index).takePhase2(request, observer);
+      TupleSpacesObserver<TakeResponse> observer = new TupleSpacesObserver<>(collector, index);
+      stubs.get(index).take(request, observer);
     }
 
     collector.waitForResponses();

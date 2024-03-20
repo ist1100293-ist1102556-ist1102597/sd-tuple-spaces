@@ -1,6 +1,6 @@
 package pt.ulisboa.tecnico.tuplespaces.client.collector;
 
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.ReadResponse;
+import pt.ulisboa.tecnico.tuplespaces.replicaTotalOrder.contract.TupleSpacesReplicaTotalOrder.ReadResponse;
 
 public class ReadResponseCollector implements ResponseCollector<ReadResponse> {
 

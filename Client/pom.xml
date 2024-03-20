@@ -73,7 +73,6 @@
 						<argument>${server.host}</argument>
 						<argument>${server.port}</argument>
 						<argument>${server.service}</argument>
-						<argument>123</argument>
 					</arguments>
 				</configuration>
 			</plugin>

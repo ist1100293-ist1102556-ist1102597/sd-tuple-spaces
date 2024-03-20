@@ -2,14 +2,8 @@ package pt.ulisboa.tecnico.tuplespaces.client;
 
 import pt.ulisboa.tecnico.tuplespaces.client.grpc.ClientService;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
 import java.util.Scanner;
-import java.util.Set;
 
 import io.grpc.StatusRuntimeException;
 
@@ -136,99 +130,13 @@ public class CommandProcessor {
         // get the pattern
         String pattern = split[1];
 
-        String finalTuple;
-        while (true) {
-            Map<Integer, List<String>> takePhase1Result; // serverID: TupleList
+        // TODO: implement take
 
-            try{
-                takePhase1Result = clientService.takePhase1(pattern);
-            } catch (StatusRuntimeException e){
-                System.out.println("ERR: " + e.getStatus().getDescription() + "\n");
-                return;
-            }
-
-            // Get the union of all the responses
-            Set<String> allTuples = new HashSet<>();
-            takePhase1Result.entrySet().stream().forEach(entry -> {
-                entry.getValue().stream().forEach(tuple -> {
-                    allTuples.add(tuple);
-                });
-            });
-
-            // Count the number of lists the tuple is in
-            Map<String, Long> counts = new HashMap<>();
-
-            allTuples.stream().forEach(tuple -> {
-                long count = takePhase1Result.entrySet().stream()
-                        .filter(entry -> entry.getValue().contains(tuple))
-                        .count();
-                // Add the count to the map
-                counts.put(tuple, count);
-            });
-
-            // Check if any tuple is in all servers
-
-            List<String> intersection = new ArrayList<>();
-            counts.entrySet().stream() //In all tuples, check if count if the same as the number of servers
-                    .filter(count -> count.getValue() == takePhase1Result.size())
-                    .forEach(count -> intersection.add(count.getKey())); //Add to the intersection list
-
-            if (!intersection.isEmpty()) { //If there is an intersection
-                // Choose a random tuple from the intersection
-                finalTuple = intersection.get((new Random().nextInt(intersection.size())));
-                break;
-            }
-
-            //If there is no intersection, check if there is a majority
-            List<String> majority = new ArrayList<>();
-            counts.entrySet().stream()
-                    .filter(count -> count.getValue() == (takePhase1Result.size()/2 + 1))
-                    .forEach(count -> majority.add(count.getKey())); //Add to the majority list
-
-            if (!majority.isEmpty()) { //If there is a majority
-                String choice = majority.get((new Random()).nextInt(majority.size()));
-                // Find the server that did not return the choice
-                int missingServer = takePhase1Result.entrySet().stream() //
-                        .filter(entry -> !entry.getValue().contains(choice))
-                        .findFirst()
-                        .get()
-                        .getKey(); //Get the serverID
-
-                // Retry the take on the missing server
-                finalTuple = retrySingleServer(choice, missingServer); 
-                break;
-            }
-            //If there is no majority, retry the take
-            // Release the tuples
-            clientService.takePhase1Release();
-
-            sleepRandom();
-        }
-
-        try{ //When we have the final tuple, we take it from all servers
-            clientService.takePhase2(finalTuple);
-        } catch (StatusRuntimeException e){
-            System.out.println("ERR: " + e.getStatus().getDescription() + "\n");
-            return;
-        }
+        String finalTuple = "final";
 
         System.out.println("OK");
         System.out.println(finalTuple);
         System.out.println("");
-    }
-
-    private String retrySingleServer(String tuple, Integer index) {
-        clientService.takePhase1Release(index);
-        while (true) { //Retry until we get a result
-            List<String> result = clientService.takePhase1(tuple, index);
-            if (result.size() != 0) {
-                return result.get(0);
-            }
-
-            clientService.takePhase1Release(index);
-            sleepRandom();            
-        }
-
     }
     
     private void sleepRandom() {
