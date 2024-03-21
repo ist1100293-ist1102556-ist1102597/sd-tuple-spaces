@@ -16,7 +16,7 @@ public class ServerTotalOrderImpl extends TupleSpacesReplicaImplBase {
     private ServerState serverState = new ServerState();
     private List<DeferedTake> deferedTakes = new ArrayList<>();
     private Condition totalOrderCondition = lock.newCondition();
-    private int currSeq = 0;
+    private int currSeq = 1;
 
     private class DeferedTake {
         private String pattern;
@@ -110,15 +110,14 @@ public class ServerTotalOrderImpl extends TupleSpacesReplicaImplBase {
     public void take(TakeRequest request, StreamObserver<TakeResponse> responseObserver) {
         lock.lock();
 
-        // TODO: implement deferd takes
         String tuple = serverState.take(request.getSearchPattern());
-        while(tuple == null){
-            try {
-                totalOrderCondition.await();
-            } catch (InterruptedException e) {
-                responseObserver.onError(CANCELLED.withDescription("Take operation interrupted").asRuntimeException());
-            }
-            tuple = serverState.take(request.getSearchPattern());
+        if (tuple == null) {
+            DeferedTake deferedTake = new DeferedTake(request.getSearchPattern(), lock);
+            deferedTakes.add(deferedTake);
+            nextTurn();
+            tuple = deferedTake.awaitTuple();
+        } else {
+            nextTurn();
         }
         TakeResponse response = TakeResponse.newBuilder().setResult(tuple).build();
         responseObserver.onNext(response);
