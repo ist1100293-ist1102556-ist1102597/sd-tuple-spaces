@@ -8,6 +8,7 @@ public class TakeResponseCollector implements ResponseCollector<TakeResponse> {
     private int numResponses = 0;
     private int numServers;
     private RuntimeException error;
+    private TakeResponse response;
 
     public TakeResponseCollector(int numServers) {
         this.numServers = numServers;
@@ -17,6 +18,9 @@ public class TakeResponseCollector implements ResponseCollector<TakeResponse> {
 	public synchronized void addResponse(TakeResponse r, Integer server) {
         numValidResponses++;
         numResponses++;
+        if (response == null) {
+            response = r;
+        }
         notifyAll();
     }
 
@@ -27,7 +31,7 @@ public class TakeResponseCollector implements ResponseCollector<TakeResponse> {
         notifyAll();
 	}
 
-    public synchronized void waitForResponses() {
+    public synchronized TakeResponse waitForResponses() {
         while (numResponses < numServers) {
             try {
                 wait();
@@ -38,5 +42,6 @@ public class TakeResponseCollector implements ResponseCollector<TakeResponse> {
         if (numValidResponses == 0) { // In case all servers are "dead"
             throw error;
         } // Otherwise, we have at least one valid response
+        return response;
     }
 }

@@ -95,8 +95,8 @@ public class ClientService {
     return result;
   }
 
-  public void take(String tuple){
-    TakeRequest request = TakeRequest.newBuilder().setSearchPattern(tuple).setSeqNumber(getSequenceNumber()).build();
+  public String take(String pattern){
+    TakeRequest request = TakeRequest.newBuilder().setSearchPattern(pattern).setSeqNumber(getSequenceNumber()).build();
     TakeResponseCollector collector = new TakeResponseCollector(stubs.size());
 
     for (Integer index : delayer) {
@@ -104,7 +104,7 @@ public class ClientService {
       stubs.get(index).take(request, observer);
     }
 
-    collector.waitForResponses();
+    return collector.waitForResponses().getResult();
   }
 
   public List<String> getTupleSpacesState(Integer index) {

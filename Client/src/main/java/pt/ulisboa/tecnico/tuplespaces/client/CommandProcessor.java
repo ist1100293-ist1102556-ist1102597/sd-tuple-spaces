@@ -130,12 +130,18 @@ public class CommandProcessor {
         // get the pattern
         String pattern = split[1];
 
-        // TODO: implement take
+        String result;
 
-        String finalTuple = "final";
+        try{
+            result = clientService.take(pattern);
+        } catch (StatusRuntimeException e){
+            System.out.println("ERR: " + e.getStatus().getDescription() + "\n");
+            return;
+        }
+        
 
         System.out.println("OK");
-        System.out.println(finalTuple);
+        System.out.println(result);
         System.out.println("");
     }
     
