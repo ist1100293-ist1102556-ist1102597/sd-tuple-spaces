@@ -199,7 +199,6 @@ public class CommandProcessor {
 
     private void exit(){
         clientService.shutdownChannel();
-        System.out.println("Exiting...");
     }
 
     private void setdelay(String[] split) {
