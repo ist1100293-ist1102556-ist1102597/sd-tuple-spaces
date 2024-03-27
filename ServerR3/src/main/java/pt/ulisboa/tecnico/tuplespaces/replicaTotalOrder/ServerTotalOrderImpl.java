@@ -118,6 +118,7 @@ public class ServerTotalOrderImpl extends TupleSpacesReplicaImplBase {
     public void take(TakeRequest request, StreamObserver<TakeResponse> responseObserver) {
         lock.lock(); // Acquire the lock
         // Try to take the tuple from the tuple space
+        awaitTurn(request.getSeqNumber());
         String tuple = serverState.take(request.getSearchPattern());
         if (tuple == null) { // If the tuple is not in the tuple space
             // Defer the take operation
